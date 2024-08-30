@@ -1,6 +1,6 @@
 import sqlite3
 import logging
-
+import prettytable as pt
 
 logger = logging.getLogger(__name__)
 
@@ -30,14 +30,16 @@ def init():
         "delta"	TEXT,
         "note"	TEXT,
         PRIMARY KEY("id" AUTOINCREMENT)
+        )
         """
     ]
     try:
         with sqlite3.connect(DBFILE) as conn:
             cursor = conn.cursor()
             for statement in dbinit:
+                print(f'{statement}')
                 cursor.execute(statement)
-            
+            print("commit")
             conn.commit()
     except sqlite3.Error as e:
         logger.error(f"{e}")
@@ -71,14 +73,14 @@ def last_breast() -> str:
 
 
 def final_report() -> str:
-    final_report=""
+    final_report=f"Elenco Poppate: \n "
     try:
         query=[
             """
             select *
             from report 
             where task == "milk"
-            and date == date('now', '-0 day) 
+            and date == date('now', '-0 day') 
             order by datetime;
             """
         ]
@@ -90,6 +92,38 @@ def final_report() -> str:
                 final_report = f"{final_report}\n {row[4]} {row[5]} {row[6]} {row[7]}"
         
         logger.info(f"{final_report}")
+    except Exception as e:
+        logger.error(f"{e}")
+    finally:
+        if conn:
+            conn.close()
+        return final_report
+
+def final_report_table() -> str:
+    final_report=None
+    
+    table = pt.PrettyTable(['Inizio', 'Fine', 'Durata', 'note'])
+
+    try:
+        query=[
+            """
+            select *
+            from report 
+            where task == "milk"
+            and date == date('now', '-0 day') 
+            order by datetime;
+            """
+        ]
+        with sqlite3.connect(DBFILE) as conn:
+            cur = conn.cursor()
+
+        
+            for row in cur.execute  (query[0]):
+                #final_report = f"{final_report}\n {row[4]} {row[5]} {row[6]} {row[7]}"
+                table.add_row([row[4], row[5], row[6], row[7]])
+        
+        logger.info(f"{table}")
+        final_report = f"{table}"
     except Exception as e:
         logger.error(f"{e}")
     finally:

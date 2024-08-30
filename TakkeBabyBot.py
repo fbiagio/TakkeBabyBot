@@ -1,29 +1,19 @@
 #!/usr/bin/env python
-# pylint: disable=unused-argument
-# This program is dedicated to the public domain under the CC0 license.
-"""
-First, a few callback functions are defined. Then, those functions are passed to
-the Application and registered at their respective places.
-Then, the bot is started and runs until we press Ctrl-C on the command line.
-Usage:
-Example of a bot-user conversation using ConversationHandler.
-Send /start to initiate the conversation.
-Press Ctrl-C on the command line or send a signal to the process to stop the
-bot.
-"""
+
 import logging
 import datetime
 import db
 import json
 from typing import Dict
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
+
 from telegram.ext import (
     Application,
     CommandHandler,
     ContextTypes,
     ConversationHandler,
     MessageHandler,
-    filters,
+    filters
 )
 from config import TakkeBabybot as TOKEN
 from config import babyname as babyname
@@ -106,6 +96,8 @@ async def start_milking(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
 async def stop_milking(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Ask the user for info about the selected predefined choice."""
     text = update.message.text
+    user_data = context.user_data
+    
     #context.user_data["choice"] = text
     context.user_data["record"]["stop"] = datetime.datetime.now().strftime(timeformat)
     logger.info(f"{context.user_data["record"]["datetime"]}")
@@ -118,26 +110,37 @@ async def stop_milking(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     #markup = ReplyKeyboardMarkup([ ["Stop"], ["Cancel"] ], one_time_keyboard=True)
     await update.message.reply_text(
         f"finalmente puoi riposarti un po'",
-        reply_markup=ReplyKeyboardMarkup([ ["Finish"], ["Cancel"] ], one_time_keyboard=True),
         )
-    return REPORT
+    
+    db.update_report(user_data["record"])
+    user_data.clear()
+    logger.info("stop conversation, cancel interaction")        
+    return ConversationHandler.END
+    #return REPORT
 
 async def pee(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     logger.info(f'pee function')
-    text = update.message.text        
+    text = update.message.text 
+    user_data = context.user_data
+       
     context.user_data["record"] = REPORT_STRUCT
     context.user_data["record"]["task"]="pee"
     context.user_data["record"]["date"]=datetime.datetime.now().strftime(dateformat)        
     context.user_data["record"]["start"]=datetime.datetime.now().strftime(datetimeformat)
     await update.message.reply_text(
-        f"Your have to change a deaper [{text.lower()}]!!! Hurry up!!",
-        reply_markup=ReplyKeyboardMarkup([ ["Finish"] ], one_time_keyboard=True),
+        f"Your have to change a deaper [{text.lower()}]!!! Hurry up!!"
     )
-    return REPORT
+    db.update_report(user_data["record"])
+    user_data.clear()
+    logger.info("stop conversation, cancel interaction")        
+    return ConversationHandler.END
+    #return REPORT
 
 async def poo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     logger.info(f'poo function')
     text = update.message.text
+    user_data = context.user_data
+
     context.user_data["record"] = REPORT_STRUCT
     context.user_data["record"]["task"]="poo"
     context.user_data["record"]["date"]=datetime.datetime.now().strftime(dateformat)        
@@ -145,19 +148,22 @@ async def poo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     await update.message.reply_text(
         f"Devi cambiare un pannollino [{text.lower()}]!!! Sbrigati!! c'è un odore terribile nell'aria",
-        reply_markup=ReplyKeyboardMarkup([ ["Finish"] ], one_time_keyboard=True),
-        )        
-    return REPORT
+       )
+    
+    db.update_report(user_data["record"])
+    user_data.clear()
+    logger.info("stop conversation, cancel interaction")        
+    return ConversationHandler.END        
+    #return REPORT
 
 
 async def dayreport(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     logger.info(f'dayreport - list all task of day')
     text = update.message.text
-    final_repot=db.final_report()
+    final_repot=db.final_report_table()
     
-    await update.message.reply_text( 
-        f"{final_repot}"
-        )    
+    await update.message.reply_text(f'{final_repot}')
+    #await update.message.reply_text( f"{final_repot}")    
     return ConversationHandler.END
 
 
@@ -217,11 +223,6 @@ def main() -> None:
             TYPING_MILKING_STOP: [
                 MessageHandler(
                     filters.Regex("^Stop$"), stop_milking
-                )
-            ],
-            REPORT: [
-                MessageHandler(
-                    filters.Regex("^Finish$"), report
                 )
             ],
             TYPING_REPLY: [
