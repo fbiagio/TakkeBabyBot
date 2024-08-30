@@ -6,7 +6,7 @@ import db
 import json
 from typing import Dict
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
-
+from telegram.constants import ParseMode
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -160,10 +160,11 @@ async def poo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def dayreport(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     logger.info(f'dayreport - list all task of day')
     text = update.message.text
-    final_repot=db.final_report_table()
+    final_repot_table=db.final_report_table()
+    final_repot=db.final_report()
     
-    await update.message.reply_text(f'{final_repot}')
-    #await update.message.reply_text( f"{final_repot}")    
+    #await update.message.reply_text(f'{final_repot}', parse_mode=ParseMode)
+    await update.message.reply_text( f"{final_repot}")    
     return ConversationHandler.END
 
 
