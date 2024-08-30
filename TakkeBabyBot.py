@@ -100,7 +100,7 @@ async def stop_milking(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     
     #context.user_data["choice"] = text
     context.user_data["record"]["stop"] = datetime.datetime.now().strftime(timeformat)
-    logger.info(f"{context.user_data["record"]["datetime"]}")
+    logger.info(f'{context.user_data["record"]["datetime"]}')
     a = datetime.datetime.now()
     b = datetime.datetime.strptime(context.user_data["record"]["datetime"], datetimeformat)
     logger.info(f"{type(a)} {type(b)}")

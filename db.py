@@ -111,9 +111,8 @@ def final_report() -> str:
 
         
             for row in cur.execute  (query[0]):
-                
-                final_report = f"{final_report}\n {":".join(row[4].split(":")[:-1])} -> {":".join(row[4].split(":")[:-1])} \t [{int(int(str(row[6]).split(".")[0])/60)} min ] ( {row[7]} )"
-            
+                final_report = f'{final_report}\n {":".join(row[4].split(":")[:-1])} -> {":".join(row[5].split(":")[:-1])} \t [{int(int(str(row[6]).split(".")[0])/60)} min ] ( {row[7]} )'
+            x
             final_report=f"{final_report}\n\n [[[ Numeri ]]]\n"
             for row in cur.execute  (query[1]):
                 final_report = f"{final_report}\n {row[1]}\t \N{Pile of Poo} "
