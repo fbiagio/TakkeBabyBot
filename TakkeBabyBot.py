@@ -25,7 +25,7 @@ logging.basicConfig(
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
-CHOOSING, TYPING_REPLY, TYPING_MILK, TYPING_MILKING_START, TYPING_MILKING_STOP , REPORT = range(6)
+CHOOSING, TYPING_REPLY, TYPING_MILK, TYPING_MILKING_START, TYPING_MILKING_STOP , REPORT_ASK = range(6)
 REPORT_STRUCT= {
         "task" : "",
         "datetime" : "",
@@ -60,16 +60,17 @@ async def milk(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data["record"] = REPORT_STRUCT
     context.user_data["record"]["task"]="milk"        
     logger.info(f'text - [ {text} ]')
-    ll=db.last_breast()
-    logger.info(f'milk - last breast {ll}')
+    last_breast=db.last_breast()
+    logger.info(f'milk - last breast {last_breast}')
 
     await update.message.reply_text(
-        f"[{text.lower()}] è ora di sfamare {babyname}...quale seno vuoi proporre"
-        f"nell'ultima poppata hai dato quello {ll}",
-        reply_markup=ReplyKeyboardMarkup([ ["DX", "SX"], ["Cancel"] ], one_time_keyboard=True),
+        f"[{text.lower()}] è ora di sfamare {babyname}..."
+        f"quale seno vuoi proporre ?"
+        f"nell'ultima poppata hai dato quello {last_breast}",
+        reply_markup=ReplyKeyboardMarkup([ ["SX", "DX"], ["Cancel"] ], one_time_keyboard=True),
         )
-    return TYPING_MILK
-
+    return TYPING_MILKING_START
+'''
 async def ask_breast(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     text = update.message.text
     context.user_data["record"]["note"]=text
@@ -79,7 +80,7 @@ async def ask_breast(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         reply_markup=ReplyKeyboardMarkup([ ["Start"], ["Cancel"] ], one_time_keyboard=True),
         )
     return TYPING_MILKING_START
-
+'''
 async def start_milking(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     text = update.message.text
     #context.user_data["choice"] = text
@@ -128,7 +129,7 @@ async def pee(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data["record"]["date"]=datetime.datetime.now().strftime(dateformat)        
     context.user_data["record"]["start"]=datetime.datetime.now().strftime(datetimeformat)
     await update.message.reply_text(
-        f"Your have to change a deaper [{text.lower()}]!!! Hurry up!!"
+        f"Hai un pannolino da cambiare a {babyname} !!! Sbrigati!!"
     )
     db.update_report(user_data["record"])
     user_data.clear()
@@ -156,12 +157,22 @@ async def poo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return ConversationHandler.END        
     #return REPORT
 
+async def askdayreport(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    logger.info(f'dayreport - ask for day')
+    text = update.message.text
+    #final_repot=db.final_report(0)
+    
+    #await update.message.reply_text(f'{final_repot}', parse_mode=ParseMode)
+    await update.message.reply_text( f"quanti giorni fa?",
+                                        reply_markup=ReplyKeyboardMarkup([ ["0","1","2", "3"], ["Cancel"] ], one_time_keyboard=True),
+                                    )    
+    return REPORT_ASK
 
 async def dayreport(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     logger.info(f'dayreport - list all task of day')
     text = update.message.text
-    final_repot_table=db.final_report_table()
-    final_repot=db.final_report()
+    #final_repot_table=db.final_report_table(text.)
+    final_repot=db.final_report(text)
     
     #await update.message.reply_text(f'{final_repot}', parse_mode=ParseMode)
     await update.message.reply_text( f"{final_repot}")    
@@ -208,17 +219,12 @@ def main() -> None:
                     filters.Regex("^milk$"), milk
                 ),
                 MessageHandler(
-                    filters.Regex("^dayreport$"), dayreport
-                )
-            ],
-            TYPING_MILK: [
-                MessageHandler(
-                    filters.Regex("^(DX|SX)$"), ask_breast
+                    filters.Regex("^dayreport$"), askdayreport
                 )
             ],
             TYPING_MILKING_START: [
                 MessageHandler(
-                    filters.Regex("^Start$"), start_milking
+                    filters.Regex("^^(DX|SX)$$"), start_milking
                 )
             ],
             TYPING_MILKING_STOP: [
@@ -230,13 +236,18 @@ def main() -> None:
                 MessageHandler(
                     filters.TEXT & ~(filters.COMMAND | filters.Regex("^Done$")), start,
                 )
+            ],
+            REPORT_ASK: [
+                MessageHandler(
+                    filters.TEXT & ~(filters.COMMAND | filters.Regex("^/d+$")), dayreport,
+                )
             ]
         },
         fallbacks=[
             MessageHandler(
                     filters.TEXT & ~(filters.COMMAND | filters.Regex("^Cancel$")), cancel,
                 ),
-                            MessageHandler(
+            MessageHandler(
                 filters.Regex("^Cancel$"), cancel
                 )
             ]

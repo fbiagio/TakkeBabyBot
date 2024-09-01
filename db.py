@@ -71,35 +71,35 @@ def last_breast() -> str:
         return result
 
 
-def final_report() -> str:
-    final_report="Report Giornaliero\n\n\n"
+def final_report(dnum) -> str:
+    final_report=""
     try:
         query=[
-            """
+            f"""
             select *
             from report 
             where task == "milk"
-            and date == date('now', '-0 day') 
+            and date == date('now', '-{dnum} day') 
             order by datetime;
             """,
-            """
+            f"""
             select task, count(task) 
             from report
-            where date == date('now', '-0 day')
+            where date == date('now', '-{dnum} day')
             and task == "poo"
             GROUP by task;
             """,
-            """
+            f"""
             select task, count(task) 
             from report
-            where date == date('now', '-0 day')
+            where date == date('now', '-{dnum} day')
             and task == "pee"
             GROUP by task;
             """,
-            """
+            f"""
             select task, count(task) 
             from report
-            where date == date('now', '-0 day')
+            where date == date('now', '-{dnum} day')
             and task == "milk"
             GROUP by task;
             """
@@ -109,20 +109,21 @@ def final_report() -> str:
         with sqlite3.connect(DBFILE) as conn:
             cur = conn.cursor()
 
-        
+            day=None
             for row in cur.execute  (query[0]):
-                final_report = f'{final_report}\n {":".join(row[4].split(":")[:-1])} -> {":".join(row[5].split(":")[:-1])} \t [{int(int(str(row[6]).split(".")[0])/60)} min ] ( {row[7]} )'
-            x
-            final_report=f"{final_report}\n\n [[[ Numeri ]]]\n"
+                day=f"{row[2]}"
+                final_report += f'{":".join(row[4].split(":")[:-1])} -> {":".join(row[5].split(":")[:-1])} \t [{int(int(str(row[6]).split(".")[0])/60)} min ] ( {row[7]} )\n'
+        
+            final_report += f"\n in numeri .... \n"
             for row in cur.execute  (query[1]):
-                final_report = f"{final_report}\n {row[1]}\t \N{Pile of Poo} "
+                final_report += f"{row[1]}\t \N{Pile of Poo}\t\t\t"
                 #https://unicode.org/emoji/charts/full-emoji-list.html
             
             for row in cur.execute  (query[2]):
-                final_report = f"{final_report}\n {row[1]}\t \N{Splashing Sweat Symbol}"
+                final_report += f"{row[1]}\t \N{Splashing Sweat Symbol}\t\t\t"
             
             for row in cur.execute  (query[3]):
-                final_report = f"{final_report}\n {row[1]}\t \N{Baby Bottle}"
+                final_report += f"{row[1]}\t \N{Baby Bottle}\n"
             
             
         logger.info(f"{final_report}")
@@ -132,7 +133,7 @@ def final_report() -> str:
     finally:
         if conn:
             conn.close()
-        return final_report
+        return f'Report del {day.split(" ")[0]}:\n{final_report}'
 
 def final_report_table() -> str:
     final_report=None

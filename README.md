@@ -21,11 +21,18 @@ pip install requirements.txt
 finally run your bot
 ```bash
 python TakkeBabyBot.py
-```bash
+```
 
+## Update 
+
+
+```bash
+git update-index --assume-unchanged config.py
+git pull
+```
 # to do list:
  - add report for vitaminic
  - send a messagge at the end of the day with the report to subscriber
 
- 
+
 
